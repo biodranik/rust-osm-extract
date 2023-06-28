@@ -1,4 +1,4 @@
-use osmpbf::{ElementReader, Element, TagIter};
+use osmpbf::{ElementReader, Element};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
@@ -13,7 +13,7 @@ const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 type ValuesSet = HashSet<String> ;
 type KeysMap = HashMap<String, ValuesSet>;
 
-fn save_tags(iter: TagIter, keys_map: &mut KeysMap) {
+fn save_tags<'a, Iter: std::iter::Iterator<Item = (&'a str, &'a str)>>(iter: Iter, keys_map: &mut KeysMap) {
     for (key, value) in iter {
         if KEYS.contains(&key) || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
             match keys_map.get_mut(key) {
@@ -44,12 +44,11 @@ fn main() -> std::io::Result<()> {
 
     // Increment the counter by one for each way.
     reader.for_each(|element| {
-        if let Element::Node(node) = element {
-            save_tags(node.tags(), &mut keys)
-        } else if let Element::Way(way) = element {
-            save_tags(way.tags(), &mut keys)
-        } else if let Element::Relation(relation) = element {
-            save_tags(relation.tags(), &mut keys)
+        match element {
+            Element::Node(e) => save_tags(e.tags(), &mut keys),
+            Element::DenseNode(e) => save_tags(e.tags(), &mut keys),
+            Element::Way(e) => save_tags(e.tags(), &mut keys),
+            Element::Relation(e) => save_tags(e.tags(), &mut keys),
         }
     }).unwrap();
 
