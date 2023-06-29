@@ -58,7 +58,12 @@ fn main() -> std::io::Result<()> {
 
     for (key, set) in keys.iter() {
         let file = dir.join(key);
-        let mut writer = File::options().create(true).write(true).open(&file)?;
+        let writer = File::options().create(true).write(true).open(&file);
+        if writer.is_err() {
+            println!("Error creating {} : {}", file.display(), writer.unwrap_err());
+            continue;
+        }
+        let mut writer = writer.unwrap();
         println!("Writing {} values to {}", set.len(), file.display());
         for val in set.iter() {
             writeln!(writer, "{val}").expect("Write failed");
