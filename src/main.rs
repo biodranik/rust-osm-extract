@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::{env, io};
 use std::fs;
-use std::io::{BufWriter, Stdout, Write};
+use std::io::{BufWriter, Stdout, StdoutLock, Write};
 // use std::path::Path;
 // use fs::File;
 
@@ -13,7 +13,7 @@ use std::io::{BufWriter, Stdout, Write};
 type ValuesSet = HashSet<String> ;
 type KeysMap = HashMap<String, ValuesSet>;
 
-fn save_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter, handle: &mut BufWriter<Stdout>) {
+fn save_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter, handle: &mut BufWriter<StdoutLock>) {
     for (key, value) in iter {
         //if KEYS.contains(&key) || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
         if key == "addr:housenumber" {
@@ -48,7 +48,9 @@ fn main() -> io::Result<()> {
     let mut keys: KeysMap = HashMap::new();
 
     let stdout = io::stdout(); // get the global stdout entity
-    let mut handle = io::BufWriter::new(stdout); // optional: wrap that handle in a buffer
+    let lock = stdout.lock();  // avoid locking/unlocking
+    let mut handle = io::BufWriter::new(lock); // optional: wrap that handle in a buffer
+
 
     reader.for_each(|element| {
         match element {
