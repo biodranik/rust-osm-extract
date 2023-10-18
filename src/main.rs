@@ -1,16 +1,27 @@
-use osmpbf::{ElementReader, Element};
+use osmpbf::{Element, ElementReader};
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::{env, io};
 use std::fs;
 use std::io::{BufWriter, Stdout, StdoutLock, Write};
+use std::{env, io};
 // use std::path::Path;
 // use fs::File;
 
-const KEYS_PREFIXES: [&str; 9] = ["name:", "int_name", "loc_name", "nat_name", "official_name", "old_name", "reg_name", "short_name", "alt_name"];
-const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
+const KEYS_PREFIXES: [&str; 9] = [
+    "name:",
+    "int_name",
+    "loc_name",
+    "nat_name",
+    "official_name",
+    "old_name",
+    "reg_name",
+    "short_name",
+    "alt_name",
+];
+const KEYS: [&str; 1] = ["name"];
+//const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 
-type ValuesSet = HashSet<String> ;
+type ValuesSet = HashSet<String>;
 type KeysMap = HashMap<String, ValuesSet>;
 
 fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<String> {
@@ -20,9 +31,8 @@ fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<St
             vec.push(value.to_string());
         }
     }
-    return vec
+    return vec;
 }
-
 
 // fn save_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter, handle: &mut BufWriter<StdoutLock>) {
 //     for (key, value) in iter {
@@ -50,7 +60,10 @@ fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<St
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        println!("Usage: {} <path to osm.pbf file> [optional output file]", args[0]);
+        println!(
+            "Usage: {} <path to osm.pbf file> [optional output file]",
+            args[0]
+        );
         return Ok(());
     }
 
@@ -63,21 +76,24 @@ fn main() -> io::Result<()> {
     let mut keys: KeysMap = HashMap::new();
 
     let stdout = io::stdout(); // get the global stdout entity
-    let lock = stdout.lock();  // avoid locking/unlocking
+    let lock = stdout.lock(); // avoid locking/unlocking
     let mut handle = BufWriter::new(lock); // optional: wrap that handle in a buffer
 
-
-    let result = reader.par_map_reduce(|element| {
-        match element {
-            Element::Node(e) => get_tags(e.tags()),
-            Element::DenseNode(e) => get_tags(e.tags()),
-            Element::Way(e) => get_tags(e.tags()),
-            Element::Relation(e) => get_tags(e.tags()),
-        }
-    },
-                          || Vec::new(),
-                          |mut a, mut b| {a.append(&mut b); a}
-    ).unwrap();
+    let result = reader
+        .par_map_reduce(
+            |element| match element {
+                Element::Node(e) => get_tags(e.tags()),
+                Element::DenseNode(e) => get_tags(e.tags()),
+                Element::Way(e) => get_tags(e.tags()),
+                Element::Relation(e) => get_tags(e.tags()),
+            },
+            || Vec::new(),
+            |mut a, mut b| {
+                a.append(&mut b);
+                a
+            },
+        )
+        .unwrap();
 
     for str in result {
         writeln!(handle, "{str}").expect("Write to stdout failed");
