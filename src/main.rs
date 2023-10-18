@@ -1,11 +1,6 @@
 use osmpbf::{Element, ElementReader};
-use std::collections::HashMap;
-use std::collections::HashSet;
-use std::fs;
-use std::io::{BufWriter, Stdout, StdoutLock, Write};
+use std::io::{BufWriter, Write};
 use std::{env, io};
-// use std::path::Path;
-// use fs::File;
 
 const KEYS_PREFIXES: [&str; 9] = [
     "name:",
@@ -21,9 +16,6 @@ const KEYS_PREFIXES: [&str; 9] = [
 const KEYS: [&str; 1] = ["name"];
 //const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 
-type ValuesSet = HashSet<String>;
-type KeysMap = HashMap<String, ValuesSet>;
-
 fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<String> {
     let mut vec: Vec<String> = Vec::new();
     for (key, value) in iter {
@@ -33,29 +25,6 @@ fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<St
     }
     return vec;
 }
-
-// fn save_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter, handle: &mut BufWriter<StdoutLock>) {
-//     for (key, value) in iter {
-//         //if KEYS.contains(&key) || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
-//         if key == "addr:housenumber" {
-//             writeln!(handle, "{value}").expect("Write to stdout failed");
-//             // match keys_map.get_mut(key) {
-//             //     Some(set) => {
-//             //         set.insert(value.to_string());
-//             //         ()
-//             //     },
-//             //     None => {
-//             //         keys_map.insert(key.to_string(), HashSet::from([value.to_string()]));
-//             //         ()
-//             //     }
-//             // }
-//         }
-//     }
-// }
-
-// fn reduce<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(a: Iter, b: Iter) -> Iter {
-//
-// }
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -67,13 +36,8 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    let use_stdout = args.len() < 3;
-    let out_file = if !use_stdout { &args[2] } else { "" };
-
     let osm_pbf_path = &args[1];
     let reader = ElementReader::from_path(osm_pbf_path).unwrap();
-
-    let mut keys: KeysMap = HashMap::new();
 
     let stdout = io::stdout(); // get the global stdout entity
     let lock = stdout.lock(); // avoid locking/unlocking
@@ -98,36 +62,6 @@ fn main() -> io::Result<()> {
     for str in result {
         writeln!(handle, "{str}").expect("Write to stdout failed");
     }
-
-    //let len = result.len();
-    //println!("{:?}", result);
-
-    // reader.for_each(|element| {
-    //     match element {
-    //         Element::Node(e) => save_tags(e.tags(), &mut handle),
-    //         Element::DenseNode(e) => save_tags(e.tags(), &mut handle),
-    //         Element::Way(e) => save_tags(e.tags(), &mut handle),
-    //         Element::Relation(e) => save_tags(e.tags(), &mut handle),
-    //     }
-    // }).unwrap();
-
-    // Write collected data to files.
-    // let dir = Path::new("./out");
-    // fs::create_dir_all(dir)?;
-    //
-    // for (key, set) in keys.iter() {
-    //     let file = dir.join(key);
-    //     let writer = File::options().create(true).write(true).open(&file);
-    //     if writer.is_err() {
-    //         println!("Error creating {} : {}", file.display(), writer.unwrap_err());
-    //         continue;
-    //     }
-    //     let mut writer = writer.unwrap();
-    //     println!("Writing {} values to {}", set.len(), file.display());
-    //     for val in set.iter() {
-    //         writeln!(writer, "{val}").expect("Write failed");
-    //     }
-    // }
 
     Ok(())
 }
