@@ -16,14 +16,27 @@ const KEYS_PREFIXES: [&str; 9] = [
 const KEYS: [&str; 1] = ["name"];
 //const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 
-fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Vec<String> {
-    let mut vec: Vec<String> = Vec::new();
+fn get_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> (u64, u64) {
+    let mut names: Vec<String> = Vec::new();
+    let mut brand: &str = "";
     for (key, value) in iter {
         if KEYS.contains(&key) || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
-            vec.push(value.to_string());
+            names.push(value.to_string());
+        } else if key == "brand" {
+            brand = value;
         }
     }
-    return vec;
+
+    if !brand.is_empty() {
+        for name in names {
+            if name == brand {
+                return (1, 1);
+            }
+        }
+        return (1, 0);
+    }
+
+    return (0, 0);
 }
 
 fn main() -> io::Result<()> {
@@ -43,7 +56,7 @@ fn main() -> io::Result<()> {
     let lock = stdout.lock(); // avoid locking/unlocking
     let mut handle = BufWriter::new(lock); // optional: wrap that handle in a buffer
 
-    let result = reader
+    let (total_brands, equal_brands) = reader
         .par_map_reduce(
             |element| match element {
                 Element::Node(e) => get_tags(e.tags()),
@@ -51,17 +64,19 @@ fn main() -> io::Result<()> {
                 Element::Way(e) => get_tags(e.tags()),
                 Element::Relation(e) => get_tags(e.tags()),
             },
-            || Vec::new(),
-            |mut a, mut b| {
-                a.append(&mut b);
-                a
+            || (0, 0),
+            |(total_brands1, equal_brands1), (total_brands2, equal_brands2)| {
+                (total_brands1 + total_brands2, equal_brands1 + equal_brands2)
             },
         )
         .unwrap();
 
-    for str in result {
-        writeln!(handle, "{str}").expect("Write to stdout failed");
-    }
+    writeln!(
+        handle,
+        "Total # of features with brand tag: {total_brands}\n\
+    # of features where brand tag is equal to one of the name tags: {equal_brands}"
+    )
+    .expect("Write to stdout failed");
 
     Ok(())
 }
