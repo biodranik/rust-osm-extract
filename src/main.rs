@@ -3,18 +3,10 @@ use std::io::{BufWriter, Write};
 use std::{env, fmt, io};
 use std::ops::Add;
 
-const KEYS_PREFIXES: [&str; 9] = [
-    "name:",
-    "int_name",
-    "loc_name",
-    "nat_name",
-    "official_name",
-    "old_name",
-    "reg_name",
-    "short_name",
-    "alt_name",
+const KEYS_PREFIXES: [&str; 1] = [
+    "name:zh",
 ];
-const KEYS: [&str; 1] = ["local_ref"];
+//const KEYS: [&str; 1] = ["local_ref"];
 //const KEYS: [&str; 1] = ["addr:street"];
 //const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 
@@ -47,22 +39,28 @@ impl fmt::Display for Stat {
 }
 
 fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Stat {
+    let mut found = false;
     for (key, value) in iter {
-        if KEYS.contains(&key) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+        //if KEYS.contains(&key) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
         //if key.starts_with("alt_name") {
             //if value.contains(";") {
                 //writeln!(io::stdout(), "{value}").expect("Write to stdout failed");
-                return Stat{count: 1};
+                //return Stat{count: 1};
             //}
 
-          for (key1, value1) in iter {
-            writeln!(io::stdout(), "{key1}={value1}").expect("Write to stdout failed");
-            writeln!(io::stdout(), "\n");
-          }
-
+          //for (key1, value1) in iter {
+        if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+            found = true;
+            write!(io::stdout(), "{key}={value} ").expect("Write to stdout failed");
+          //}
         }
     }
-    return Stat::zero();
+    if found {
+        write!(io::stdout(), "\n").expect("Write to stdout failed");
+        return Stat{count: 1};
+    } else {
+        return Stat::zero();
+    }
 }
 
 fn main() -> io::Result<()> {
@@ -75,9 +73,9 @@ fn main() -> io::Result<()> {
     let osm_pbf_path = &args[1];
     let reader = ElementReader::from_path(osm_pbf_path).unwrap();
 
-    // let stdout = io::stdout(); // get the global stdout entity
-    // let lock = stdout.lock(); // avoid locking/unlocking
-    // let mut handle = BufWriter::new(lock); // optional: wrap that handle in a buffer
+    //let stdout = io::stdout(); // get the global stdout entity
+    //let lock = stdout.lock(); // avoid locking/unlocking
+    //let mut handle = BufWriter::new(lock); // optional: wrap that handle in a buffer
 
     let stat = reader
         .par_map_reduce(
