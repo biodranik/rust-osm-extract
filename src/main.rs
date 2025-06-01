@@ -4,7 +4,7 @@ use std::{env, fmt, io};
 use std::ops::Add;
 
 const KEYS_PREFIXES: [&str; 1] = [
-    "name:zh",
+    "socket:",
 ];
 //const KEYS: [&str; 1] = ["local_ref"];
 //const KEYS: [&str; 1] = ["addr:street"];
@@ -34,7 +34,7 @@ impl Add for Stat {
 
 impl fmt::Display for Stat {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Total addr:street with ; : {}", self.count)
+        write!(f, "Total found tags: {}", self.count)
     }
 }
 
@@ -51,7 +51,7 @@ fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> St
           //for (key1, value1) in iter {
         if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
             found = true;
-            write!(io::stdout(), "{key}={value} ").expect("Write to stdout failed");
+            write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
           //}
         }
     }
