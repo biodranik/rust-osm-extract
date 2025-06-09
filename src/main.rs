@@ -1,5 +1,5 @@
 use osmpbf::{Element, ElementReader};
-use std::io::{BufWriter, Write};
+use std::io::{Write};
 use std::{env, fmt, io};
 use std::ops::Add;
 
@@ -38,7 +38,7 @@ impl fmt::Display for Stat {
     }
 }
 
-fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> Stat {
+fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(t: &str, id: i64, iter: Iter) -> Stat {
     let mut found = false;
     for (key, value) in iter {
         //if KEYS.contains(&key) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
@@ -47,19 +47,21 @@ fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(iter: Iter) -> St
                 //writeln!(io::stdout(), "{value}").expect("Write to stdout failed");
                 //return Stat{count: 1};
             //}
-
-          //for (key1, value1) in iter {
+         //for (key1, value1) in iter {
         if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
             found = true;
-            write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
+            break;
           //}
         }
     }
     if found {
-        write!(io::stdout(), "\n").expect("Write to stdout failed");
-        return Stat{count: 1};
+        for (key, value) in iter {
+            write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
+        }
+        // write!(io::stdout(), "https://www.openstreetmap.org/{}/{}\n\n", t, id).expect("Write to stdout failed");
+        Stat { count: 1 }
     } else {
-        return Stat::zero();
+        Stat::zero()
     }
 }
 
@@ -71,7 +73,7 @@ fn main() -> io::Result<()> {
     }
 
     let osm_pbf_path = &args[1];
-    let reader = ElementReader::from_path(osm_pbf_path).unwrap();
+    let reader = ElementReader::from_path(osm_pbf_path)?;
 
     //let stdout = io::stdout(); // get the global stdout entity
     //let lock = stdout.lock(); // avoid locking/unlocking
@@ -80,15 +82,14 @@ fn main() -> io::Result<()> {
     let stat = reader
         .par_map_reduce(
             |element| match element {
-                Element::Node(e) => process_tags(e.tags()),
-                Element::DenseNode(e) => process_tags(e.tags()),
-                Element::Way(e) => process_tags(e.tags()),
-                Element::Relation(e) => process_tags(e.tags()),
+                Element::Node(e) => process_tags("node", e.id(), e.tags()),
+                Element::DenseNode(e) => process_tags("node", e.id(), e.tags()),
+                Element::Way(e) => process_tags("way", e.id(), e.tags()),
+                Element::Relation(e) => process_tags("relation", e.id(), e.tags()),
             },
             || Stat::zero(),
             |stat1, stat2| stat1 + stat2
-        )
-        .unwrap();
+        )?;
 
     writeln!(io::stdout(), "{stat}").expect("Write to stdout failed");
 
