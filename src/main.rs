@@ -3,10 +3,18 @@ use std::io::{Write};
 use std::{env, fmt, io};
 use std::ops::Add;
 
-const KEYS_PREFIXES: [&str; 1] = [
-    "socket:",
-];
-//const KEYS: [&str; 1] = ["local_ref"];
+// const KEYS_PREFIXES: [&str; 9] = [
+//     "name:",
+//     "int_name",
+//     "loc_name",
+//     "nat_name",
+//     "official_name",
+//     "old_name",
+//     "reg_name",
+//     "short_name",
+//     "alt_name",
+// ];
+const KEYS: [&str; 1] = ["default_language"];
 //const KEYS: [&str; 1] = ["addr:street"];
 //const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
 
@@ -38,27 +46,26 @@ impl fmt::Display for Stat {
     }
 }
 
-fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(t: &str, id: i64, iter: Iter) -> Stat {
+fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)> + Clone>(t: &str, id: i64, iter: Iter) -> Stat {
     let mut found = false;
-    for (key, value) in iter {
-        //if KEYS.contains(&key) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
-        //if key.starts_with("alt_name") {
-            //if value.contains(";") {
-                //writeln!(io::stdout(), "{value}").expect("Write to stdout failed");
-                //return Stat{count: 1};
-            //}
-         //for (key1, value1) in iter {
-        if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+    for (key, _value) in iter.clone() {
+        if KEYS.contains(&key) { // KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+        //     if value.contains(";") {
+        //         //writeln!(io::stdout(), "{value}").expect("Write to stdout failed");
+        //         //return Stat{count: 1};
+        //     //}
+        //  //for (key1, value1) in iter {
+        //if /*KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) && */value.contains("🍇") {
             found = true;
             break;
           //}
         }
     }
     if found {
+        write!(io::stdout(), "https://www.openstreetmap.org/{}/{}\n\n", t, id).expect("Write to stdout failed");
         for (key, value) in iter {
             write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
         }
-        // write!(io::stdout(), "https://www.openstreetmap.org/{}/{}\n\n", t, id).expect("Write to stdout failed");
         Stat { count: 1 }
     } else {
         Stat::zero()
