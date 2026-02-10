@@ -3,12 +3,32 @@ use std::io::{Write};
 use std::{env, fmt, io};
 use std::ops::Add;
 
-const KEYS_PREFIXES: [&str; 1] = [
-    "socket:",
-];
+// const KEYS_PREFIXES: [&str; 1] = [
+//     "socket:",
+// ];
+//const KEYS: [&str; 1] = ["opening_hours"];
 //const KEYS: [&str; 1] = ["local_ref"];
 //const KEYS: [&str; 1] = ["addr:street"];
-//const KEYS: [&str; 3] = ["name", "addr:street", "addr:housename"];
+
+const KEYS: [&str; 6] = ["cxx:code", "naptan:NaptanCode", "naptan:AtcoCode", "naptan:Notes", "stop", "stop_id"];
+const KEY_CONTAINS: [&str; 2] = ["ref", "gtfs"];
+const KEYS_IGNORE: [&str; 2] = ["source_ref", "route_ref"];
+
+const REQUIRED_KEYS_AND_VALUES: [(&str, &str); 13] = [
+    ("highway", "bus_stop"),
+    ("public_transport", "platform"),
+    ("public_transport", "station"),
+    ("public_transport", "stop_position"),
+    ("railway", "stop"),
+    ("railway", "station"),
+    ("railway", "halt"),
+    ("railway", "platform"),
+    ("railway", "subway_entrance"),
+    ("railway", "tram_stop"),
+    ("amenity", "ferry_terminal"),
+    ("amenity", "bus_station"),
+    ("aerialway", "station")
+];
 
 struct Stat {
     count: u64,
@@ -38,25 +58,32 @@ impl fmt::Display for Stat {
     }
 }
 
-fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)>>(t: &str, id: i64, iter: Iter) -> Stat {
+fn process_tags<'a, Iter: Iterator<Item = (&'a str, &'a str)> + Clone>(t: &str, id: i64, iter: Iter) -> Stat {
+    let iterCopy = iter.clone();
     let mut found = false;
     for (key, value) in iter {
-        //if KEYS.contains(&key) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+        //if key.starts_with("name") && value.contains("\n") {
+        if REQUIRED_KEYS_AND_VALUES.contains(&(key, value)) { // || KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
         //if key.starts_with("alt_name") {
             //if value.contains(";") {
-                //writeln!(io::stdout(), "{value}").expect("Write to stdout failed");
-                //return Stat{count: 1};
-            //}
-         //for (key1, value1) in iter {
-        if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+                // writeln!(io::stdout(), "{t} {id} {key}={value}").expect("Write to stdout failed");
+                // return Stat{count: 1};
+
             found = true;
             break;
-          //}
         }
+         //for (key1, value1) in iter {
+        // if KEYS_PREFIXES.iter().any(|&s| key.starts_with(s)) {
+        //     found = true;
+        //     break;
+        //   //}
+        // }
     }
     if found {
-        for (key, value) in iter {
-            write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
+        for (key, value) in iterCopy {
+            if !KEYS_IGNORE.contains(&key) && (KEYS.contains(&key) || KEY_CONTAINS.iter().any(|&s| key.contains(s))) {
+                write!(io::stdout(), "{key}={value}\n").expect("Write to stdout failed");
+            }
         }
         // write!(io::stdout(), "https://www.openstreetmap.org/{}/{}\n\n", t, id).expect("Write to stdout failed");
         Stat { count: 1 }
